@@ -1158,6 +1158,21 @@ function navigateReplacements(backward: boolean) {
   }
 }
 
+// Nueva función para manejar la tecla Tab en el output box
+function handleOutputKeyDown(e: KeyboardEvent) {
+  if (e.key === 'Tab') {
+    e.preventDefault(); // Prevenir el comportamiento predeterminado de Tab
+
+    if (e.shiftKey) {
+      // Shift+Tab: Mover el foco a la barra lateral
+      focusPanel('sidebar');
+    } else {
+      // Tab: Mover el foco al panel de entrada
+      focusPanel('input');
+    }
+  }
+}
+
 // ==================== FUNCIONES DE PROCESAMIENTO ====================
 function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): (...args: Parameters<T>) => void {
   let timer: number | null = null;
@@ -1202,16 +1217,19 @@ function processAndHighlight() {
         if (processedText.value) {
           const wrapper = document.createElement('div');
           wrapper.className = 'output-content-wrapper';
+          wrapper.setAttribute('tabindex', '-1'); // Hacer que el wrapper no sea enfocable
           
           if (outputMode.value === 'code') {
             const codeElement = document.createElement('code');
             codeElement.textContent = processedText.value;
+            codeElement.setAttribute('tabindex', '-1'); // Hacer que el code no sea enfocable
             wrapper.appendChild(codeElement);
             hljs.highlightElement(codeElement);
           } else {
             const textElement = document.createElement('div');
             textElement.className = 'output-text';
             textElement.textContent = processedText.value;
+            textElement.setAttribute('tabindex', '-1'); // Hacer que el div no sea enfocable
             wrapper.appendChild(textElement);
           }
           
@@ -1602,6 +1620,8 @@ watch([textInput, () => [...replacements.value], () => ({ ...options }), outputM
           tabindex="0"
           :aria-label="t('processedOutput')"
           :data-placeholder="t('outputPlaceholder')"
+          @focus="activePanel = 'output'"
+          @keydown="handleOutputKeyDown"
         ></pre>
       </div>
     </section>
@@ -1877,7 +1897,7 @@ body, html {
   width: 50%;
   text-align: center;
   position: relative;
-  z-index: 2; /* Aseguramos que el texto esté por encima del fondo azul */
+  z-index: 2;
 }
 
 .slider .option.code {
@@ -1906,7 +1926,7 @@ body, html {
   transition: transform 0.3s ease;
   top: 2px;
   left: 2px;
-  z-index: 1; /* El fondo azul está debajo del texto */
+  z-index: 1;
 }
 
 .mode-switch input:checked + .slider:before {
@@ -2028,6 +2048,12 @@ body, html {
   width: 100%;
   height: 100%;
   transition: all 0.3s ease;
+}
+
+.output-content-wrapper,
+.output-content-wrapper * {
+  outline: none !important;
+  user-select: text;
 }
 
 .buttons {
