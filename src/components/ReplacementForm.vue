@@ -59,7 +59,7 @@ const MAX_HISTORY = 50;
 const MAX_FILE_SIZE = 1024 * 1024; // 1MB
 const MAX_PRESET_NAME_LENGTH = 25;
 const LONG_PRESS_DURATION = 500; // 500ms for long press
-const INPUT_DEBOUNCE_DELAY = 600; // 600ms for smoother typing
+const INPUT_DEBOUNCE_DELAY = 600; // Increased to 600ms for smoother typing
 
 // ==================== TRADUCCIONES ====================
 const translations: Translations = {
@@ -71,9 +71,6 @@ const translations: Translations = {
     wholeWord: "Whole words",
     useRegex: "Use regex",
     inputText: "Input Text",
-    inputMode: "Input Mode",
-    modeCode: "Code",
-    modePlain: "Plain Text",
     processedOutput: "Processed Output",
     add: "+ Add",
     clear: "Clear",
@@ -111,7 +108,9 @@ const translations: Translations = {
     presetError: "Failed to {action} preset",
     fileSizeError: "File size exceeds 1MB limit",
     nextMatch: "Next match",
-    prevMatch: "Previous match"
+    prevMatch: "Previous match",
+    inputTypeCode: "Code",
+    inputTypePlain: "Plain Text"
   },
   es: {
     appTitle: "UFO Replacer",
@@ -121,9 +120,6 @@ const translations: Translations = {
     wholeWord: "Palabras completas",
     useRegex: "Usar regex",
     inputText: "Texto de entrada",
-    inputMode: "Modo de entrada",
-    modeCode: "Código",
-    modePlain: "Texto Plano",
     processedOutput: "Resultado procesado",
     add: "+ Añadir",
     clear: "Limpiar",
@@ -161,7 +157,9 @@ const translations: Translations = {
     presetError: "Error al {action} el preset",
     fileSizeError: "El archivo excede el límite de 1MB",
     nextMatch: "Siguiente coincidencia",
-    prevMatch: "Coincidencia anterior"
+    prevMatch: "Coincidencia anterior",
+    inputTypeCode: "Código",
+    inputTypePlain: "Texto Plano"
   }
 };
 
@@ -201,7 +199,7 @@ const highlightMatchesData = ref<Record<string, HighlightMatch[]>>({});
 const currentHighlightIndices = ref<Record<string, number>>({});
 const isFirstNavigation = ref(true);
 const isTyping = ref(false);
-const inputMode = ref<'code' | 'plain'>('plain'); // New state for input mode
+const inputType = ref<'code' | 'plain'>('plain'); // New state for input type
 
 const longPressTimer = ref<number | null>(null);
 const isLongPressing = ref(false);
@@ -352,7 +350,7 @@ function loadState(index: number) {
 function managePreset(action: 'save' | 'load' | 'delete', presetNameArg?: string) {
   const name = presetNameArg || presetName.value.trim();
   
-  if (action === 'save') {
+  if (action === 'save Versions) {
     if (!name) {
       showTempMessage('presetNameRequired', {}, 3000);
       return false;
@@ -591,15 +589,6 @@ function processHighlightMatches() {
   const tempContainer = document.createElement('div');
   tempContainer.textContent = plainText;
   
-  // Apply highlight.js for Code mode
-  if (inputMode.value === 'code' && plainText) {
-    const codeElement = document.createElement('code');
-    codeElement.textContent = plainText;
-    hljs.highlightElement(codeElement);
-    tempContainer.innerHTML = '';
-    tempContainer.appendChild(codeElement);
-  }
-  
   const sortedReplacements = [...replacements.value]
     .filter(r => r.original && !r.error)
     .sort((a, b) => (b.original?.length || 0) - (a.original?.length || 0));
@@ -746,7 +735,7 @@ function navigateToHighlight(replacementId: string, matchIndex: number, scroll: 
             const elementRect = targetMatch.element.getBoundingClientRect();
             if (elementRect.top < containerRect.top || elementRect.bottom > containerRect.bottom) {
               const scrollTop = inputContainerRef.value!.scrollTop;
-              const targetTop = elementRect.top - containerRect.top + scrollTop - (containerRect.height / 2) + (elementRect.height / 2);
+              const targetTop = elementRect.top - containerRect.top + scrollTop - (containerRect.height / 2) + (elementRectheight / 2);
               inputContainerRef.value!.scrollTo({
                 top: targetTop,
                 behavior: 'smooth'
@@ -919,7 +908,6 @@ function handlePaste(e: ClipboardEvent) {
     
     textInput.value = inputContainerRef.value.innerText;
     saveState();
-    processAndHighlight();
   }
 }
 
@@ -1010,18 +998,10 @@ function updateInputContent(content: string) {
   inputContainerRef.value.innerHTML = '';
   if (content) {
     inputContainerRef.value.textContent = content;
-    if (inputMode.value === 'code') {
-      const codeElement = document.createElement('code');
-      codeElement.textContent = content;
-      hljs.highlightElement(codeElement);
-      inputContainerRef.value.innerHTML = '';
-      inputContainerRef.value.appendChild(codeElement);
-    }
   }
   if (!content && inputContainerRef.value.childNodes.length > 0) {
     inputContainerRef.value.innerHTML = '';
   }
-  processHighlightMatches();
   forcePlaceholder();
 }
 
@@ -1058,6 +1038,12 @@ async function handleFileUpload(event: Event) {
     const content = await readFileAsText(file);
     fileContent.value = content;
     textInput.value = content;
+    // Set input type based on file extension for code files
+    if (file.name.match(/\.(js|css|html|json|md)$/i)) {
+      inputType.value = 'code';
+    } else {
+      inputType.value = 'plain';
+    }
     updateInputContent(content);
     saveState();
     processAndHighlight();
@@ -1221,10 +1207,16 @@ function processAndHighlight() {
       if (outputContainerRef.value) {
         outputContainerRef.value.innerHTML = '';
         if (processedText.value) {
-          const codeElement = document.createElement('code');
-          codeElement.textContent = processedText.value;
-          outputContainerRef.value.appendChild(codeElement);
-          hljs.highlightElement(codeElement);
+          if (inputType.value === 'code') {
+            const codeElement = document.createElement('code');
+            codeElement.textContent = processedText.value;
+            outputContainerRef.value.appendChild(codeElement);
+            hljs.highlightElement(codeElement);
+          } else {
+            const textElement = document.createElement('span');
+            textElement.textContent = processedText.value;
+            outputContainerRef.value.appendChild(textElement);
+          }
         }
       }
     } catch (error) {
@@ -1282,8 +1274,8 @@ onUnmounted(() => {
 });
 
 // ==================== WATCHERS ====================
-watch([textInput, () => [...replacements.value], () => ({ ...options }), inputMode], 
-  ([newTextInput, newReplacements], [, oldReplacements]) => {
+watch([textInput, () => [...replacements.value], () => ({ ...options }), inputType], 
+  ([newTextInput, newReplacements, newOptions], [, oldReplacements]) => {
     const isLargeText = newTextInput.length > 10000;
     isProcessingLargeText.value = isLargeText;
     
@@ -1530,12 +1522,24 @@ watch([textInput, () => [...replacements.value], () => ({ ...options }), inputMo
     <section class="content">
       <div class="editor-panel">
         <div class="editor-header">
-          <h5 class="mb-0">{{ t('inputText') }}</h5>
-          <div class="input-mode-selector">
-            <select v-model="inputMode" class="form-control form-control-sm">
-              <option value="plain">{{ t('modePlain') }}</option>
-              <option value="code">{{ t('modeCode') }}</option>
-            </select>
+          <div class="input-header">
+            <h5 class="mb-0">{{ t('inputText') }}</h5>
+            <div class="input-type-switcher">
+              <button 
+                @click="inputType = 'plain'"
+                :class="{ 'active': inputType === 'plain' }"
+                :aria-label="t('inputTypePlain')"
+              >
+                {{ t('inputTypePlain') }}
+              </button>
+              <button 
+                @click="inputType = 'code'"
+                :class="{ 'active': inputType === 'code' }"
+                :aria-label="t('inputTypeCode')"
+              >
+                {{ t('inputTypeCode') }}
+              </button>
+            </div>
           </div>
           <div class="file-upload-container">
             <div class="file-formats">
@@ -1567,7 +1571,6 @@ watch([textInput, () => [...replacements.value], () => ({ ...options }), inputMo
           @input="handleInput"
           @paste="handlePaste"
           :data-placeholder="t('inputPlaceholder')"
-          :class="{ 'hljs': inputMode === 'code' }"
         ></div>
         <div v-if="isProcessingLargeText" class="loading-indicator">
           <div class="spinner-border spinner-border-sm"></div>
@@ -1605,7 +1608,8 @@ watch([textInput, () => [...replacements.value], () => ({ ...options }), inputMo
         </div>
         <pre 
           ref="outputContainerRef"
-          class="editor-content output-pre hljs"
+          class="editor-content output-pre"
+          :class="{ 'hljs': inputType === 'code' }"
           tabindex="0"
           :aria-label="t('processedOutput')"
           :data-placeholder="t('outputPlaceholder')"
@@ -1826,6 +1830,10 @@ body, html {
   border-bottom: 1px solid var(--border-color);
 }
 
+.editor-panel:focus-within {
+  overflow: visible;
+}
+
 .editor-header {
   height: var(--panel-header-height);
   padding: 0 15px;
@@ -1835,12 +1843,36 @@ body, html {
   border-bottom: 1px solid var(--border-color);
 }
 
-.input-mode-selector {
-  margin-right: 10px;
+.input-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.input-mode-selector select {
-  width: 120px;
+.input-type-switcher {
+  display: flex;
+  gap: 5px;
+}
+
+.input-type-switcher button {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  padding: 4px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.input-type-switcher button.active {
+  background: #0d6efd;
+  border-color: #0d6efd;
+  color: white;
+}
+
+.input-type-switcher button:hover {
+  background: var(--btn-hover-bg);
 }
 
 .editor-content {
@@ -1978,13 +2010,13 @@ body, html {
   border-width: 0.15em;
 }
 
-.form-control, .form-select {
+.form-control {
   background-color: var(--input-bg);
   color: var(--text-color);
   border-color: var(--input-border);
 }
 
-.form-control:focus, .form-select:focus {
+.form-control:focus {
   background-color: var(--input-bg);
   color: var(--text-color);
 }
@@ -2303,7 +2335,8 @@ h1::before {
   display: block;
 }
 
-.output-pre code {
+.output-pre code,
+.output-pre span {
   white-space: pre-wrap !important;
   word-break: break-word !important;
 }
