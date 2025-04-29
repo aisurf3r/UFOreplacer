@@ -108,9 +108,7 @@ const translations: Translations = {
     presetError: "Failed to {action} preset",
     fileSizeError: "File size exceeds 1MB limit",
     nextMatch: "Next match",
-    prevMatch: "Previous match",
-    inputTypeCode: "Code",
-    inputTypePlain: "Plain Text"
+    prevMatch: "Previous match"
   },
   es: {
     appTitle: "UFO Replacer",
@@ -157,9 +155,7 @@ const translations: Translations = {
     presetError: "Error al {action} el preset",
     fileSizeError: "El archivo excede el límite de 1MB",
     nextMatch: "Siguiente coincidencia",
-    prevMatch: "Coincidencia anterior",
-    inputTypeCode: "Código",
-    inputTypePlain: "Texto Plano"
+    prevMatch: "Coincidencia anterior"
   }
 };
 
@@ -199,7 +195,6 @@ const highlightMatchesData = ref<Record<string, HighlightMatch[]>>({});
 const currentHighlightIndices = ref<Record<string, number>>({});
 const isFirstNavigation = ref(true);
 const isTyping = ref(false);
-const inputType = ref<'code' | 'plain'>('plain');
 
 const longPressTimer = ref<number | null>(null);
 const isLongPressing = ref(false);
@@ -1038,11 +1033,6 @@ async function handleFileUpload(event: Event) {
     const content = await readFileAsText(file);
     fileContent.value = content;
     textInput.value = content;
-    if (file.name.match(/\.(js|css|html|json|md)$/i)) {
-      inputType.value = 'code';
-    } else {
-      inputType.value = 'plain';
-    }
     updateInputContent(content);
     saveState();
     processAndHighlight();
@@ -1206,16 +1196,10 @@ function processAndHighlight() {
       if (outputContainerRef.value) {
         outputContainerRef.value.innerHTML = '';
         if (processedText.value) {
-          if (inputType.value === 'code') {
-            const codeElement = document.createElement('code');
-            codeElement.textContent = processedText.value;
-            outputContainerRef.value.appendChild(codeElement);
-            hljs.highlightElement(codeElement);
-          } else {
-            const textElement = document.createElement('span');
-            textElement.textContent = processedText.value;
-            outputContainerRef.value.appendChild(textElement);
-          }
+          const codeElement = document.createElement('code');
+          codeElement.textContent = processedText.value;
+          outputContainerRef.value.appendChild(codeElement);
+          hljs.highlightElement(codeElement);
         }
       }
     } catch (error) {
@@ -1273,8 +1257,8 @@ onUnmounted(() => {
 });
 
 // ==================== WATCHERS ====================
-watch([textInput, () => [...replacements.value], () => ({ ...options }), inputType], 
-  ([newTextInput, newReplacements, _options, _inputType], [, oldReplacements]) => {
+watch([textInput, () => [...replacements.value], () => ({ ...options })], 
+  ([newTextInput, newReplacements], [, oldReplacements]) => {
     const isLargeText = newTextInput.length > 10000;
     isProcessingLargeText.value = isLargeText;
     
@@ -1521,25 +1505,7 @@ watch([textInput, () => [...replacements.value], () => ({ ...options }), inputTy
     <section class="content">
       <div class="editor-panel">
         <div class="editor-header">
-          <div class="input-header">
-            <h5 class="mb-0">{{ t('inputText') }}</h5>
-            <div class="input-type-switcher">
-              <button 
-                @click="inputType = 'plain'"
-                :class="{ 'active': inputType === 'plain' }"
-                :aria-label="t('inputTypePlain')"
-              >
-                {{ t('inputTypePlain') }}
-              </button>
-              <button 
-                @click="inputType = 'code'"
-                :class="{ 'active': inputType === 'code' }"
-                :aria-label="t('inputTypeCode')"
-              >
-                {{ t('inputTypeCode') }}
-              </button>
-            </div>
-          </div>
+          <h5 class="mb-0">{{ t('inputText') }}</h5>
           <div class="file-upload-container">
             <div class="file-formats">
               <span class="format-icon" title="Text">TXT</span>
@@ -1607,8 +1573,7 @@ watch([textInput, () => [...replacements.value], () => ({ ...options }), inputTy
         </div>
         <pre 
           ref="outputContainerRef"
-          class="editor-content output-pre"
-          :class="{ 'hljs': inputType === 'code' }"
+          class="editor-content output-pre hljs"
           tabindex="0"
           :aria-label="t('processedOutput')"
           :data-placeholder="t('outputPlaceholder')"
@@ -1842,38 +1807,6 @@ body, html {
   border-bottom: 1px solid var(--border-color);
 }
 
-.input-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.input-type-switcher {
-  display: flex;
-  gap: 5px;
-}
-
-.input-type-switcher button {
-  background: var(--input-bg);
-  border: 1px solid var(--border-color);
-  color: var(--text-color);
-  padding: 3px 8px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 0.7rem;
-  transition: all 0.2s ease;
-}
-
-.input-type-switcher button.active {
-  background: #0d6efd;
-  border-color: #0d6efd;
-  color: white;
-}
-
-.input-type-switcher button:hover {
-  background: var(--btn-hover-bg);
-}
-
 .editor-content {
   flex-grow: 1;
   overflow: auto;
@@ -1917,15 +1850,11 @@ body, html {
 .output-pre {
   white-space: pre-wrap;
   word-wrap: break-word;
-  background-color: var(--panel-bg);
-  margin: 4px 4px 8px 4px;
-  padding: 15px 10px;
+  background-color: var(--highlight-bg);
+  margin: 0;
   font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
   text-align: left;
   position: relative;
-  width: calc(100% - 8px);
-  box-sizing: border-box;
-  transition: background-color 0.3s ease, padding 0.3s ease;
 }
 
 .output-pre:empty:before {
@@ -1944,24 +1873,6 @@ body, html {
   outline-offset: 2px !important;
   box-shadow: 0 0 8px rgba(59, 130, 246, 0.5) !important;
   z-index: 1;
-}
-
-.output-pre.hljs {
-  background: var(--highlight-bg);
-  padding: 15px 10px;
-  margin: 4px 4px 8px 4px;
-  width: calc(100% - 8px);
-  box-sizing: border-box;
-  transition: background-color 0.3s ease, padding 0.3s ease;
-}
-
-.output-pre code,
-.output-pre span {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  white-space: pre-wrap !important;
-  word-break: break-word !important;
 }
 
 .buttons {
@@ -2338,11 +2249,26 @@ h1::before {
   margin-left: 0.5rem !important;
 }
 
+.hljs {
+  background: var(--highlight-bg) !important;
+  padding: 15px 10px !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  margin: 4px 4px 8px 4px !important;
+  width: calc(100% - 8px) !important;
+  box-sizing: border-box !important;
+}
+
 .manual-placeholder {
   color: var(--text-color);
   opacity: 0.6;
   pointer-events: none;
   font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
   display: block;
+}
+
+.output-pre code {
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
 }
 </style>
