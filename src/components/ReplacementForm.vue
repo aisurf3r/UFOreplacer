@@ -1194,7 +1194,15 @@ function processAndHighlight() {
     try {
       clearRegexCache();
       updateReplacementCounts(textInput.value);
-      processHighlightMatches();
+      
+      // Solo procesar resaltados si el texto no es demasiado grande
+      if (textInput.value.length <= 50000) { // Umbral ajustado a 50,000 caracteres
+        processHighlightMatches();
+      } else {
+        // Limpiar resaltados previos si existen
+        clearHighlights();
+      }
+      
       restoreFocusAfterUpdate();
       
       if (outputContainerRef.value) {
@@ -1202,18 +1210,18 @@ function processAndHighlight() {
         if (processedText.value) {
           const wrapper = document.createElement('div');
           wrapper.className = 'output-content-wrapper';
-          wrapper.setAttribute('tabindex', '-1'); // Evitar que el wrapper sea enfocable
+          wrapper.setAttribute('tabindex', '-1');
           
           if (outputMode.value === 'code') {
             const codeElement = document.createElement('code');
-            codeElement.setAttribute('tabindex', '-1'); // Evitar que el elemento <code> sea enfocable
+            codeElement.setAttribute('tabindex', '-1');
             codeElement.textContent = processedText.value;
             wrapper.appendChild(codeElement);
             hljs.highlightElement(codeElement);
           } else {
             const textElement = document.createElement('div');
             textElement.className = 'output-text';
-            textElement.setAttribute('tabindex', '-1'); // Evitar que el elemento <div> sea enfocable
+            textElement.setAttribute('tabindex', '-1');
             textElement.textContent = processedText.value;
             wrapper.appendChild(textElement);
           }
