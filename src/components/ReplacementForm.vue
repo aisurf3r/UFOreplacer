@@ -1196,7 +1196,7 @@ function processAndHighlight() {
       updateReplacementCounts(textInput.value);
       
       // Solo procesar resaltados si el texto no es demasiado grande
-      if (textInput.value.length <= 50000) { // Umbral ajustado a 50,000 caracteres
+      if (textInput.value.length <= 10000) { // Umbral ajustado a 10,000 caracteres
         processHighlightMatches();
       } else {
         // Limpiar resaltados previos si existen
