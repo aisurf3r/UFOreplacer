@@ -199,7 +199,7 @@ const highlightMatchesData = ref<Record<string, HighlightMatch[]>>({});
 const currentHighlightIndices = ref<Record<string, number>>({});
 const isFirstNavigation = ref(true);
 const isTyping = ref(false);
-const inputType = ref<'code' | 'plain'>('plain'); // New state for input type
+const inputType = ref<'code' | 'plain'>('plain');
 
 const longPressTimer = ref<number | null>(null);
 const isLongPressing = ref(false);
@@ -350,7 +350,7 @@ function loadState(index: number) {
 function managePreset(action: 'save' | 'load' | 'delete', presetNameArg?: string) {
   const name = presetNameArg || presetName.value.trim();
   
-  if (action === 'save Versions) {
+  if (action === 'save') {
     if (!name) {
       showTempMessage('presetNameRequired', {}, 3000);
       return false;
@@ -735,7 +735,7 @@ function navigateToHighlight(replacementId: string, matchIndex: number, scroll: 
             const elementRect = targetMatch.element.getBoundingClientRect();
             if (elementRect.top < containerRect.top || elementRect.bottom > containerRect.bottom) {
               const scrollTop = inputContainerRef.value!.scrollTop;
-              const targetTop = elementRect.top - containerRect.top + scrollTop - (containerRect.height / 2) + (elementRectheight / 2);
+              const targetTop = elementRect.top - containerRect.top + scrollTop - (containerRect.height / 2) + (elementRect.height / 2);
               inputContainerRef.value!.scrollTo({
                 top: targetTop,
                 behavior: 'smooth'
@@ -1038,7 +1038,6 @@ async function handleFileUpload(event: Event) {
     const content = await readFileAsText(file);
     fileContent.value = content;
     textInput.value = content;
-    // Set input type based on file extension for code files
     if (file.name.match(/\.(js|css|html|json|md)$/i)) {
       inputType.value = 'code';
     } else {
