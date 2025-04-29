@@ -1274,7 +1274,7 @@ onUnmounted(() => {
 
 // ==================== WATCHERS ====================
 watch([textInput, () => [...replacements.value], () => ({ ...options }), inputType], 
-  ([newTextInput, newReplacements, _, inputType], [, oldReplacements]) => {
+  ([newTextInput, newReplacements, _, _], [, oldReplacements]) => {
     const isLargeText = newTextInput.length > 10000;
     isProcessingLargeText.value = isLargeText;
     
