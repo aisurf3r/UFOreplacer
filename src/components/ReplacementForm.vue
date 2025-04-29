@@ -1274,7 +1274,7 @@ onUnmounted(() => {
 
 // ==================== WATCHERS ====================
 watch([textInput, () => [...replacements.value], () => ({ ...options }), inputType], 
-  ([newTextInput, newReplacements, _], [, oldReplacements]) => {
+  ([newTextInput, newReplacements, _, inputType], [, oldReplacements]) => {
     const isLargeText = newTextInput.length > 10000;
     isProcessingLargeText.value = isLargeText;
     
@@ -1857,10 +1857,10 @@ body, html {
   background: var(--input-bg);
   border: 1px solid var(--border-color);
   color: var(--text-color);
-  padding: 4px 12px;
-  border-radius: 16px;
+  padding: 3px 8px;
+  border-radius: 12px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   transition: all 0.2s ease;
 }
 
@@ -1917,11 +1917,15 @@ body, html {
 .output-pre {
   white-space: pre-wrap;
   word-wrap: break-word;
-  background-color: var(--highlight-bg);
-  margin: 0;
+  background-color: var(--panel-bg);
+  margin: 4px 4px 8px 4px;
+  padding: 15px 10px;
   font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
   text-align: left;
   position: relative;
+  width: calc(100% - 8px);
+  box-sizing: border-box;
+  transition: background-color 0.3s ease, padding 0.3s ease;
 }
 
 .output-pre:empty:before {
@@ -1940,6 +1944,24 @@ body, html {
   outline-offset: 2px !important;
   box-shadow: 0 0 8px rgba(59, 130, 246, 0.5) !important;
   z-index: 1;
+}
+
+.output-pre.hljs {
+  background: var(--highlight-bg);
+  padding: 15px 10px;
+  margin: 4px 4px 8px 4px;
+  width: calc(100% - 8px);
+  box-sizing: border-box;
+  transition: background-color 0.3s ease, padding 0.3s ease;
+}
+
+.output-pre code,
+.output-pre span {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
 }
 
 .buttons {
@@ -2316,27 +2338,11 @@ h1::before {
   margin-left: 0.5rem !important;
 }
 
-.hljs {
-  background: var(--highlight-bg) !important;
-  padding: 15px 10px !important;
-  border-radius: 0 !important;
-  outline: none !important;
-  margin: 4px 4px 8px 4px !important;
-  width: calc(100% - 8px) !important;
-  box-sizing: border-box !important;
-}
-
 .manual-placeholder {
   color: var(--text-color);
   opacity: 0.6;
   pointer-events: none;
   font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
   display: block;
-}
-
-.output-pre code,
-.output-pre span {
-  white-space: pre-wrap !important;
-  word-break: break-word !important;
 }
 </style>
