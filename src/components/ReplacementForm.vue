@@ -179,7 +179,6 @@ const options = reactive({
 const textInput = ref('');
 const fileContent = ref<string | null>(null);
 const fileName = ref('');
-const contentType = ref<'plain' | 'code'>('plain'); // Nuevo estado para tipo de contenido
 const isLoading = ref(false);
 const isProcessingLargeText = ref(false);
 const errorMessage = ref('');
@@ -215,18 +214,6 @@ const canNavigatePrev = computed(() => (id: string) => {
   const matches = highlightMatchesData.value[id] || [];
   return matches.length > 0 && (currentHighlightIndices.value[id] ?? 0) > 0;
 });
-
-// ==================== FUNCIONES AUXILIARES ====================
-function isCodeFile(fileName: string): boolean {
-  // Extensiones que se consideran código y deben resaltarse
-  const codeExtensions = [
-    '.js', '.jsx', '.ts', '.tsx', '.html', '.css',
-    '.json', '.xml', '.md', '.py', '.java', '.cpp',
-    '.c', '.cs', '.rb', '.php', '.sql', '.sh', '.yaml', '.yml'
-  ];
-  const extension = fileName.toLowerCase().split('.').pop();
-  return extension ? codeExtensions.includes(`.${extension}`) : false;
-}
 
 // ==================== FUNCIONES DE TRADUCCIÓN ====================
 const t = (key: string, params?: Record<string, string|number>): string => {
@@ -898,7 +885,6 @@ function handleInput() {
 function handlePaste(e: ClipboardEvent) {
   e.preventDefault();
   isTyping.value = false;
-  contentType.value = 'plain'; // Texto pegado se trata como texto plano por defecto
   const text = e.clipboardData?.getData('text/plain') || '';
   const selection = window.getSelection();
   
@@ -985,7 +971,6 @@ function clearAllText() {
   textInput.value = '';
   fileName.value = '';
   fileContent.value = null;
-  contentType.value = 'plain'; // Restablecer a texto plano
   if (inputContainerRef.value) {
     while (inputContainerRef.value.firstChild) {
       inputContainerRef.value.removeChild(inputContainerRef.value.firstChild);
@@ -1029,7 +1014,6 @@ async function handleFileUpload(event: Event) {
   isLoading.value = true;
   errorMessage.value = '';
   fileName.value = file.name;
-  contentType.value = isCodeFile(file.name) ? 'code' : 'plain'; // Determinar tipo de contenido
 
   const validTypes = [
     'text/plain', 'text/csv', 'text/html', 
@@ -1212,16 +1196,10 @@ function processAndHighlight() {
       if (outputContainerRef.value) {
         outputContainerRef.value.innerHTML = '';
         if (processedText.value) {
-          if (contentType.value === 'code') {
-            // Aplicar resaltado de sintaxis para contenido de tipo código
-            const codeElement = document.createElement('code');
-            codeElement.textContent = processedText.value;
-            outputContainerRef.value.appendChild(codeElement);
-            hljs.highlightElement(codeElement);
-          } else {
-            // Renderizar texto plano sin resaltado
-            outputContainerRef.value.textContent = processedText.value;
-          }
+          const codeElement = document.createElement('code');
+          codeElement.textContent = processedText.value;
+          outputContainerRef.value.appendChild(codeElement);
+          hljs.highlightElement(codeElement);
         }
       }
     } catch (error) {
