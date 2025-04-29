@@ -108,7 +108,9 @@ const translations: Translations = {
     presetError: "Failed to {action} preset",
     fileSizeError: "File size exceeds 1MB limit",
     nextMatch: "Next match",
-    prevMatch: "Previous match"
+    prevMatch: "Previous match",
+    outputModeCode: "Code",
+    outputModeText: "Text"
   },
   es: {
     appTitle: "UFO Replacer",
@@ -155,7 +157,9 @@ const translations: Translations = {
     presetError: "Error al {action} el preset",
     fileSizeError: "El archivo excede el límite de 1MB",
     nextMatch: "Siguiente coincidencia",
-    prevMatch: "Coincidencia anterior"
+    prevMatch: "Coincidencia anterior",
+    outputModeCode: "Código",
+    outputModeText: "Texto"
   }
 };
 
@@ -195,6 +199,7 @@ const highlightMatchesData = ref<Record<string, HighlightMatch[]>>({});
 const currentHighlightIndices = ref<Record<string, number>>({});
 const isFirstNavigation = ref(true);
 const isTyping = ref(false);
+const outputMode = ref<'code' | 'text'>('code'); // New state for output mode
 
 const longPressTimer = ref<number | null>(null);
 const isLongPressing = ref(false);
@@ -1196,10 +1201,16 @@ function processAndHighlight() {
       if (outputContainerRef.value) {
         outputContainerRef.value.innerHTML = '';
         if (processedText.value) {
-          const codeElement = document.createElement('code');
-          codeElement.textContent = processedText.value;
-          outputContainerRef.value.appendChild(codeElement);
-          hljs.highlightElement(codeElement);
+          if (outputMode.value === 'code') {
+            const codeElement = document.createElement('code');
+            codeElement.textContent = processedText.value;
+            outputContainerRef.value.appendChild(codeElement);
+            hljs.highlightElement(codeElement);
+          } else {
+            const textElement = document.createElement('span');
+            textElement.textContent = processedText.value;
+            outputContainerRef.value.appendChild(textElement);
+          }
         }
       }
     } catch (error) {
@@ -1257,7 +1268,7 @@ onUnmounted(() => {
 });
 
 // ==================== WATCHERS ====================
-watch([textInput, () => [...replacements.value], () => ({ ...options })], 
+watch([textInput, () => [...replacements.value], () => ({ ...options }), outputMode], 
   ([newTextInput, newReplacements], [, oldReplacements]) => {
     const isLargeText = newTextInput.length > 10000;
     isProcessingLargeText.value = isLargeText;
@@ -1505,7 +1516,25 @@ watch([textInput, () => [...replacements.value], () => ({ ...options })],
     <section class="content">
       <div class="editor-panel">
         <div class="editor-header">
-          <h5 class="mb-0">{{ t('inputText') }}</h5>
+          <div class="d-flex align-items-center">
+            <h5 class="mb-0 me-3">{{ t('inputText') }}</h5>
+            <div class="output-mode-switcher">
+              <button 
+                @click="outputMode = 'code'"
+                :class="{ 'active': outputMode === 'code' }"
+                aria-label="Code Mode"
+              >
+                {{ t('outputModeCode') }}
+              </button>
+              <button 
+                @click="outputMode = 'text'"
+                :class="{ 'active': outputMode === 'text' }"
+                aria-label="Text Mode"
+              >
+                {{ t('outputModeText') }}
+              </button>
+            </div>
+          </div>
           <div class="file-upload-container">
             <div class="file-formats">
               <span class="format-icon" title="Text">TXT</span>
@@ -1573,7 +1602,8 @@ watch([textInput, () => [...replacements.value], () => ({ ...options })],
         </div>
         <pre 
           ref="outputContainerRef"
-          class="editor-content output-pre hljs"
+          class="editor-content output-pre"
+          :class="{ 'hljs': outputMode === 'code' }"
           tabindex="0"
           :aria-label="t('processedOutput')"
           :data-placeholder="t('outputPlaceholder')"
@@ -1855,6 +1885,7 @@ body, html {
   font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
   text-align: left;
   position: relative;
+  transition: all 0.2s ease;
 }
 
 .output-pre:empty:before {
@@ -2035,6 +2066,32 @@ body, html {
   background: var(--btn-hover-bg);
 }
 
+.output-mode-switcher {
+  display: flex;
+  gap: 5px;
+}
+
+.output-mode-switcher button {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  padding: 4px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.output-mode-switcher button.active {
+  background: #0d6efd;
+  border-color: #0d6efd;
+  color: white;
+}
+
+.output-mode-switcher button:hover {
+  background: var(--btn-hover-bg);
+}
+
 @keyframes floatUFO {
   0%, 100% {
     transform: translateY(0);
@@ -2141,6 +2198,10 @@ h1::before {
   margin-right: 0.5rem;
 }
 
+.me-3 {
+  margin-right: 1rem;
+}
+
 .mb-0 {
   margin-bottom: 0 !important;
 }
@@ -2170,6 +2231,10 @@ h1::before {
 
 .d-block {
   display: block !important;
+}
+
+.d-flex {
+  display: flex !important;
 }
 
 .w-auto {
@@ -2265,6 +2330,11 @@ h1::before {
   pointer-events: none;
   font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
   display: block;
+}
+
+.output-pre span {
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
 }
 
 .output-pre code {
