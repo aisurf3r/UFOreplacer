@@ -107,7 +107,6 @@ const translations: Translations = {
     presetNotFound: "Preset \"{name}\" not found",
     presetError: "Failed to {action} preset",
     fileSizeError: "File size exceeds 1MB limit",
-    presetNameTooLong: "Preset name must be 25 characters or less",
     nextMatch: "Next match",
     prevMatch: "Previous match"
   },
@@ -155,7 +154,6 @@ const translations: Translations = {
     presetNotFound: "Preset \"{name}\" no encontrado",
     presetError: "Error al {action} el preset",
     fileSizeError: "El archivo excede el límite de 1MB",
-    presetNameTooLong: "El nombre del preset debe tener 25 caracteres o menos",
     nextMatch: "Siguiente coincidencia",
     prevMatch: "Coincidencia anterior"
   }
@@ -352,10 +350,6 @@ function managePreset(action: 'save' | 'load' | 'delete', presetNameArg?: string
       showTempMessage('presetNameRequired', {}, 3000);
       return false;
     }
-    if (name.length > MAX_PRESET_NAME_LENGTH) {
-      showTempMessage('presetNameTooLong', {}, 3000);
-      return false;
-    }
   }
   
   try {
@@ -469,6 +463,9 @@ function clearAllReplacements() {
   highlightMatchesData.value = {};
   currentHighlightIndices.value = {};
   clearHighlights();
+  if (inputContainerRef.value) {
+    inputContainerRef.value.blur();
+  }
 }
 
 // ==================== FUNCIONES DE TEXTO ====================
@@ -744,7 +741,7 @@ function navigateToHighlight(replacementId: string, matchIndex: number, scroll: 
 
         if (inputContainerRef.value && !isLongPress) {
           if (matchIndex !== 0) {
-            inputContainerRef.value.focus();
+            inputContainerRef.value.blur();
           }
           activePanel.value = 'input';
         }
