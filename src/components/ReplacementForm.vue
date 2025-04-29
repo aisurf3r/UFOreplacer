@@ -1231,7 +1231,7 @@ function restoreFocusAfterUpdate() {
   if (lastFocusedReplacement.value !== null && lastFocusedField.value) {
     nextTick(() => {
       const inputs = document.querySelectorAll('.replacement-item input');
-      const index = lastFocusedReplacement.value! * 2 + (lastFocusedField.value === constants.replacement ? 1 : 0);
+      const index = lastFocusedReplacement.value! * 2 + (lastFocusedField.value === replacement ? 1 : 0);
       if (inputs[index]) {
         (inputs[index] as HTMLElement).focus();
       }
