@@ -202,7 +202,7 @@ const isTyping = ref(false);
 const longPressTimer = ref<number | null>(null);
 const isLongPressing = ref(false);
 const isPressing = ref(false);
-const outputMode = ref<'code' | 'text'>('code'); // New state for switch
+const outputMode = ref<'code' | 'text'>('code');
 
 // ==================== COMPUTED ====================
 const canUndo = computed(() => historyIndex.value > 0);
@@ -1200,17 +1200,22 @@ function processAndHighlight() {
       if (outputContainerRef.value) {
         outputContainerRef.value.innerHTML = '';
         if (processedText.value) {
+          const wrapper = document.createElement('div');
+          wrapper.className = 'output-content-wrapper';
+          
           if (outputMode.value === 'code') {
             const codeElement = document.createElement('code');
             codeElement.textContent = processedText.value;
-            outputContainerRef.value.appendChild(codeElement);
+            wrapper.appendChild(codeElement);
             hljs.highlightElement(codeElement);
           } else {
             const textElement = document.createElement('div');
-            textElement.textContent = processedText.value;
             textElement.className = 'output-text';
-            outputContainerRef.value.appendChild(textElement);
+            textElement.textContent = processedText.value;
+            wrapper.appendChild(textElement);
           }
+          
+          outputContainerRef.value.appendChild(wrapper);
         }
       }
     } catch (error) {
@@ -1226,7 +1231,7 @@ function restoreFocusAfterUpdate() {
   if (lastFocusedReplacement.value !== null && lastFocusedField.value) {
     nextTick(() => {
       const inputs = document.querySelectorAll('.replacement-item input');
-      const index = lastFocusedReplacement.value! * 2 + (lastFocusedField.value === 'replacement' ? 1 : 0);
+      const index = lastFocusedReplacement.value! * 2 + (lastFocusedField.value === constants.replacement ? 1 : 0);
       if (inputs[index]) {
         (inputs[index] as HTMLElement).focus();
       }
@@ -1594,7 +1599,6 @@ watch([textInput, () => [...replacements.value], () => ({ ...options }), outputM
         <pre 
           ref="outputContainerRef"
           class="editor-content output-pre"
-          :class="{ 'hljs': outputMode === 'code' }"
           tabindex="0"
           :aria-label="t('processedOutput')"
           :data-placeholder="t('outputPlaceholder')"
@@ -1872,6 +1876,8 @@ body, html {
   transition: opacity 0.3s ease;
   width: 50%;
   text-align: center;
+  position: relative;
+  z-index: 2; /* Aseguramos que el texto esté por encima del fondo azul */
 }
 
 .slider .option.code {
@@ -1900,6 +1906,7 @@ body, html {
   transition: transform 0.3s ease;
   top: 2px;
   left: 2px;
+  z-index: 1; /* El fondo azul está debajo del texto */
 }
 
 .mode-switch input:checked + .slider:before {
@@ -1959,6 +1966,13 @@ body, html {
   font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
   text-align: left;
   position: relative;
+  padding: 15px 10px;
+  margin: 4px 4px 8px 4px;
+  width: calc(100% - 8px);
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: auto;
+  flex-grow: 1;
   transition: all 0.3s ease;
 }
 
@@ -1980,12 +1994,39 @@ body, html {
   z-index: 1;
 }
 
+.output-content-wrapper {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  color: var(--text-color);
+  line-height: 1.5;
+  width: 100%;
+  height: 100%;
+  transition: all 0.3s ease;
+}
+
+.output-content-wrapper code {
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transition: all 0.3s ease;
+}
+
 .output-text {
   white-space: pre-wrap;
   word-wrap: break-word;
   font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
   color: var(--text-color);
   line-height: 1.5;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
   transition: all 0.3s ease;
 }
 
@@ -2363,28 +2404,11 @@ h1::before {
   margin-left: 0.5rem !important;
 }
 
-.hljs {
-  background: var(--highlight-bg) !important;
-  padding: 15px 10px !important;
-  border-radius: 0 !important;
-  outline: none !important;
-  margin: 4px 4px 8px 4px !important;
-  width: calc(100% - 8px) !important;
-  box-sizing: border-box !important;
-  transition: all 0.3s ease;
-}
-
 .manual-placeholder {
   color: var(--text-color);
   opacity: 0.6;
   pointer-events: none;
   font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
   display: block;
-}
-
-.output-pre code {
-  white-space: pre-wrap !important;
-  word-break: break-word !important;
-  transition: all 0.3s ease;
 }
 </style>
