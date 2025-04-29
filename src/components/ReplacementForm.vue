@@ -59,7 +59,7 @@ const MAX_HISTORY = 50;
 const MAX_FILE_SIZE = 1024 * 1024; // 1MB
 const MAX_PRESET_NAME_LENGTH = 25;
 const LONG_PRESS_DURATION = 500; // 500ms for long press
-const INPUT_DEBOUNCE_DELAY = 600; // Increased to 600ms for smoother typing
+const INPUT_DEBOUNCE_DELAY = 600; // 600ms for smoother typing
 
 // ==================== TRADUCCIONES ====================
 const translations: Translations = {
@@ -71,6 +71,9 @@ const translations: Translations = {
     wholeWord: "Whole words",
     useRegex: "Use regex",
     inputText: "Input Text",
+    inputMode: "Input Mode",
+    modeCode: "Code",
+    modePlain: "Plain Text",
     processedOutput: "Processed Output",
     add: "+ Add",
     clear: "Clear",
@@ -118,6 +121,9 @@ const translations: Translations = {
     wholeWord: "Palabras completas",
     useRegex: "Usar regex",
     inputText: "Texto de entrada",
+    inputMode: "Modo de entrada",
+    modeCode: "Código",
+    modePlain: "Texto Plano",
     processedOutput: "Resultado procesado",
     add: "+ Añadir",
     clear: "Limpiar",
@@ -195,6 +201,7 @@ const highlightMatchesData = ref<Record<string, HighlightMatch[]>>({});
 const currentHighlightIndices = ref<Record<string, number>>({});
 const isFirstNavigation = ref(true);
 const isTyping = ref(false);
+const inputMode = ref<'code' | 'plain'>('plain'); // New state for input mode
 
 const longPressTimer = ref<number | null>(null);
 const isLongPressing = ref(false);
@@ -584,6 +591,15 @@ function processHighlightMatches() {
   const tempContainer = document.createElement('div');
   tempContainer.textContent = plainText;
   
+  // Apply highlight.js for Code mode
+  if (inputMode.value === 'code' && plainText) {
+    const codeElement = document.createElement('code');
+    codeElement.textContent = plainText;
+    hljs.highlightElement(codeElement);
+    tempContainer.innerHTML = '';
+    tempContainer.appendChild(codeElement);
+  }
+  
   const sortedReplacements = [...replacements.value]
     .filter(r => r.original && !r.error)
     .sort((a, b) => (b.original?.length || 0) - (a.original?.length || 0));
@@ -903,6 +919,7 @@ function handlePaste(e: ClipboardEvent) {
     
     textInput.value = inputContainerRef.value.innerText;
     saveState();
+    processAndHighlight();
   }
 }
 
@@ -993,10 +1010,18 @@ function updateInputContent(content: string) {
   inputContainerRef.value.innerHTML = '';
   if (content) {
     inputContainerRef.value.textContent = content;
+    if (inputMode.value === 'code') {
+      const codeElement = document.createElement('code');
+      codeElement.textContent = content;
+      hljs.highlightElement(codeElement);
+      inputContainerRef.value.innerHTML = '';
+      inputContainerRef.value.appendChild(codeElement);
+    }
   }
   if (!content && inputContainerRef.value.childNodes.length > 0) {
     inputContainerRef.value.innerHTML = '';
   }
+  processHighlightMatches();
   forcePlaceholder();
 }
 
@@ -1257,7 +1282,7 @@ onUnmounted(() => {
 });
 
 // ==================== WATCHERS ====================
-watch([textInput, () => [...replacements.value], () => ({ ...options })], 
+watch([textInput, () => [...replacements.value], () => ({ ...options }), inputMode], 
   ([newTextInput, newReplacements], [, oldReplacements]) => {
     const isLargeText = newTextInput.length > 10000;
     isProcessingLargeText.value = isLargeText;
@@ -1506,6 +1531,12 @@ watch([textInput, () => [...replacements.value], () => ({ ...options })],
       <div class="editor-panel">
         <div class="editor-header">
           <h5 class="mb-0">{{ t('inputText') }}</h5>
+          <div class="input-mode-selector">
+            <select v-model="inputMode" class="form-control form-control-sm">
+              <option value="plain">{{ t('modePlain') }}</option>
+              <option value="code">{{ t('modeCode') }}</option>
+            </select>
+          </div>
           <div class="file-upload-container">
             <div class="file-formats">
               <span class="format-icon" title="Text">TXT</span>
@@ -1536,6 +1567,7 @@ watch([textInput, () => [...replacements.value], () => ({ ...options })],
           @input="handleInput"
           @paste="handlePaste"
           :data-placeholder="t('inputPlaceholder')"
+          :class="{ 'hljs': inputMode === 'code' }"
         ></div>
         <div v-if="isProcessingLargeText" class="loading-indicator">
           <div class="spinner-border spinner-border-sm"></div>
@@ -1794,10 +1826,6 @@ body, html {
   border-bottom: 1px solid var(--border-color);
 }
 
-.editor-panel:focus-within {
-  overflow: visible;
-}
-
 .editor-header {
   height: var(--panel-header-height);
   padding: 0 15px;
@@ -1805,6 +1833,14 @@ body, html {
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid var(--border-color);
+}
+
+.input-mode-selector {
+  margin-right: 10px;
+}
+
+.input-mode-selector select {
+  width: 120px;
 }
 
 .editor-content {
@@ -1942,13 +1978,13 @@ body, html {
   border-width: 0.15em;
 }
 
-.form-control {
+.form-control, .form-select {
   background-color: var(--input-bg);
   color: var(--text-color);
   border-color: var(--input-border);
 }
 
-.form-control:focus {
+.form-control:focus, .form-select:focus {
   background-color: var(--input-bg);
   color: var(--text-color);
 }
