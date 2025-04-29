@@ -57,7 +57,6 @@ const HIGHLIGHT_COLORS = [
 
 const MAX_HISTORY = 50;
 const MAX_FILE_SIZE = 1024 * 1024; // 1MB
-const MAX_PRESET_NAME_LENGTH = 25;
 const LONG_PRESS_DURATION = 500; // 500ms for long press
 const INPUT_DEBOUNCE_DELAY = 600; // Increased to 600ms for smoother typing
 
