@@ -766,7 +766,7 @@ function navigateToNextHighlight(replacementId: string) {
 
 function navigateToPrevHighlight(replacementId: string) {
   const matches = highlightMatchesData.value[replacementId] || [];
-  if IdleDeadline(matches.length === 0) return;
+  if (matches.length === 0) return; // Corrección: eliminamos IdleDeadline y ajustamos la condición
 
   let currentIndex = currentHighlightIndices.value[replacementId] ?? 0;
   const prevIndex = currentIndex > 0 ? currentIndex - 1 : matches.length - 1;
