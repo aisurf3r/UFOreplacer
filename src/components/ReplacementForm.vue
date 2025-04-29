@@ -199,7 +199,7 @@ const highlightMatchesData = ref<Record<string, HighlightMatch[]>>({});
 const currentHighlightIndices = ref<Record<string, number>>({});
 const isFirstNavigation = ref(true);
 const isTyping = ref(false);
-const outputMode = ref<'code' | 'text'>('code'); // New state for output mode
+const outputMode = ref<'code' | 'text'>('code'); // State for output mode
 
 const longPressTimer = ref<number | null>(null);
 const isLongPressing = ref(false);
@@ -1201,16 +1201,21 @@ function processAndHighlight() {
       if (outputContainerRef.value) {
         outputContainerRef.value.innerHTML = '';
         if (processedText.value) {
+          const wrapper = document.createElement('div');
+          wrapper.className = 'output-wrapper';
+          
           if (outputMode.value === 'code') {
             const codeElement = document.createElement('code');
             codeElement.textContent = processedText.value;
-            outputContainerRef.value.appendChild(codeElement);
+            wrapper.appendChild(codeElement);
             hljs.highlightElement(codeElement);
           } else {
             const textElement = document.createElement('span');
             textElement.textContent = processedText.value;
-            outputContainerRef.value.appendChild(textElement);
+            wrapper.appendChild(textElement);
           }
+          
+          outputContainerRef.value.appendChild(wrapper);
         }
       }
     } catch (error) {
@@ -1518,22 +1523,18 @@ watch([textInput, () => [...replacements.value], () => ({ ...options }), outputM
         <div class="editor-header">
           <div class="d-flex align-items-center">
             <h5 class="mb-0 me-3">{{ t('inputText') }}</h5>
-            <div class="output-mode-switcher">
-              <button 
-                @click="outputMode = 'code'"
-                :class="{ 'active': outputMode === 'code' }"
-                aria-label="Code Mode"
+            <label class="toggle-switch">
+              <input 
+                type="checkbox" 
+                v-model="outputMode" 
+                true-value="code" 
+                false-value="text"
               >
-                {{ t('outputModeCode') }}
-              </button>
-              <button 
-                @click="outputMode = 'text'"
-                :class="{ 'active': outputMode === 'text' }"
-                aria-label="Text Mode"
-              >
-                {{ t('outputModeText') }}
-              </button>
-            </div>
+              <span class="slider">
+                <span class="label code">{{ t('outputModeCode') }}</span>
+                <span class="label text">{{ t('outputModeText') }}</span>
+              </span>
+            </label>
           </div>
           <div class="file-upload-container">
             <div class="file-formats">
@@ -1885,7 +1886,10 @@ body, html {
   font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
   text-align: left;
   position: relative;
-  transition: all 0.2s ease;
+  padding: 15px 10px;
+  margin: 4px 4px 8px 4px;
+  width: calc(100% - 8px);
+  box-sizing: border-box;
 }
 
 .output-pre:empty:before {
@@ -1904,6 +1908,22 @@ body, html {
   outline-offset: 2px !important;
   box-shadow: 0 0 8px rgba(59, 130, 246, 0.5) !important;
   z-index: 1;
+}
+
+.output-wrapper {
+  display: block;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.output-wrapper code,
+.output-wrapper span {
+  display: block;
+  width: 100%;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  line-height: 1.5;
 }
 
 .buttons {
@@ -2066,30 +2086,77 @@ body, html {
   background: var(--btn-hover-bg);
 }
 
-.output-mode-switcher {
-  display: flex;
-  gap: 5px;
+/* Toggle Switch Styles */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 120px;
+  height: 30px;
 }
 
-.output-mode-switcher button {
-  background: var(--input-bg);
-  border: 1px solid var(--border-color);
-  color: var(--text-color);
-  padding: 4px 12px;
-  border-radius: 16px;
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
   cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #2d2d2d;
+  border: 1px solid #00c4b4;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  transition: all 0.3s ease;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 24px;
+  width: 60px;
+  left: 3px;
+  bottom: 2px;
+  background-color: #00c4b4;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+input:checked + .slider:before {
+  transform: translateX(54px);
+  background-color: #2d2d2d;
+}
+
+.slider .label {
   font-size: 0.8rem;
-  transition: all 0.2s ease;
+  font-weight: 500;
+  text-transform: uppercase;
+  z-index: 1;
 }
 
-.output-mode-switcher button.active {
-  background: #0d6efd;
-  border-color: #0d6efd;
-  color: white;
+.slider .label.code {
+  color: #00c4b4;
+  margin-left: 5px;
 }
 
-.output-mode-switcher button:hover {
-  background: var(--btn-hover-bg);
+.slider .label.text {
+  color: #e0e0e0;
+  margin-right: 5px;
+}
+
+input:checked + .slider .label.code {
+  color: #e0e0e0;
+}
+
+input:checked + .slider .label.text {
+  color: #00c4b4;
 }
 
 @keyframes floatUFO {
@@ -2316,12 +2383,8 @@ h1::before {
 
 .hljs {
   background: var(--highlight-bg) !important;
-  padding: 15px 10px !important;
   border-radius: 0 !important;
   outline: none !important;
-  margin: 4px 4px 8px 4px !important;
-  width: calc(100% - 8px) !important;
-  box-sizing: border-box !important;
 }
 
 .manual-placeholder {
@@ -2330,15 +2393,5 @@ h1::before {
   pointer-events: none;
   font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
   display: block;
-}
-
-.output-pre span {
-  white-space: pre-wrap !important;
-  word-break: break-word !important;
-}
-
-.output-pre code {
-  white-space: pre-wrap !important;
-  word-break: break-word !important;
 }
 </style>
