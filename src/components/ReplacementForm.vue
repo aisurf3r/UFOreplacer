@@ -202,7 +202,7 @@ const isTyping = ref(false);
 const longPressTimer = ref<number | null>(null);
 const isLongPressing = ref(false);
 const isPressing = ref(false);
-const outputMode = ref<'code' | 'text'>('code');
+const outputMode = ref<'code' | 'text'>('text');
 
 // ==================== COMPUTED ====================
 const canUndo = computed(() => historyIndex.value > 0);
@@ -1526,13 +1526,13 @@ watch([textInput, () => [...replacements.value], () => ({ ...options }), outputM
         <div class="editor-header">
           <div class="input-header-content">
             <h5 class="mb-0">{{ t('inputText') }}</h5>
-            <label class="mode-switch">
-              <input type="checkbox" v-model="outputMode" true-value="code" false-value="text">
-              <span class="slider">
-                <span class="option code">{{ t('codeMode') }}</span>
-                <span class="option text">{{ t('textMode') }}</span>
-              </span>
-            </label>
+           <label class="mode-switch">
+          <input type="checkbox" v-model="outputMode" true-value="code" false-value="text">
+          <span class="slider">
+          <span class="option text">{{ t('textMode') }}</span>
+          <span class="option code">{{ t('codeMode') }}</span>
+          </span>
+          </label>
           </div>
           <div class="file-upload-container">
             <div class="file-formats">
@@ -1883,20 +1883,20 @@ body, html {
   z-index: 2;
 }
 
-.slider .option.code {
-  text-align: left;
+.slider .option.text {
+  text-align: left; /* "Texto" ahora está a la izquierda */
 }
 
-.slider .option.text {
-  text-align: right;
+.slider .option.code {
+  text-align: right; /* "Código" ahora está a la derecha */
 }
 
 .mode-switch input:checked + .slider .code {
-  opacity: 1;
+  opacity: 1; /* Resalta "Código" cuando el modo es "code" */
 }
 
 .mode-switch input:not(:checked) + .slider .text {
-  opacity: 1;
+  opacity: 1; /* Resalta "Texto" cuando el modo es "text" */
 }
 
 .slider:before {
@@ -1913,7 +1913,11 @@ body, html {
 }
 
 .mode-switch input:checked + .slider:before {
-  transform: translateX(0);
+  transform: translateX(58px); /* Fondo a la derecha cuando el modo es "code" */
+}
+
+.mode-switch input:not(:checked) + .slider:before {
+  transform: translateX(0); /* Fondo a la izquierda cuando el modo es "text" */
 }
 
 .mode-switch input:not(:checked) + .slider:before {
