@@ -109,8 +109,8 @@ const translations: Translations = {
     fileSizeError: "File size exceeds 1MB limit",
     nextMatch: "Next match",
     prevMatch: "Previous match",
-    outputModeCode: "Code",
-    outputModeText: "Text"
+    codeMode: "Code",
+    textMode: "Text"
   },
   es: {
     appTitle: "UFO Replacer",
@@ -158,8 +158,8 @@ const translations: Translations = {
     fileSizeError: "El archivo excede el límite de 1MB",
     nextMatch: "Siguiente coincidencia",
     prevMatch: "Coincidencia anterior",
-    outputModeCode: "Código",
-    outputModeText: "Texto"
+    codeMode: "Código",
+    textMode: "Texto"
   }
 };
 
@@ -199,11 +199,10 @@ const highlightMatchesData = ref<Record<string, HighlightMatch[]>>({});
 const currentHighlightIndices = ref<Record<string, number>>({});
 const isFirstNavigation = ref(true);
 const isTyping = ref(false);
-const outputMode = ref<'code' | 'text'>('code'); // State for output mode
-
 const longPressTimer = ref<number | null>(null);
 const isLongPressing = ref(false);
 const isPressing = ref(false);
+const outputMode = ref<'code' | 'text'>('code'); // New state for switch
 
 // ==================== COMPUTED ====================
 const canUndo = computed(() => historyIndex.value > 0);
@@ -1201,21 +1200,17 @@ function processAndHighlight() {
       if (outputContainerRef.value) {
         outputContainerRef.value.innerHTML = '';
         if (processedText.value) {
-          const wrapper = document.createElement('div');
-          wrapper.className = 'output-wrapper';
-          
           if (outputMode.value === 'code') {
             const codeElement = document.createElement('code');
             codeElement.textContent = processedText.value;
-            wrapper.appendChild(codeElement);
+            outputContainerRef.value.appendChild(codeElement);
             hljs.highlightElement(codeElement);
           } else {
-            const textElement = document.createElement('span');
+            const textElement = document.createElement('div');
             textElement.textContent = processedText.value;
-            wrapper.appendChild(textElement);
+            textElement.className = 'output-text';
+            outputContainerRef.value.appendChild(textElement);
           }
-          
-          outputContainerRef.value.appendChild(wrapper);
         }
       }
     } catch (error) {
@@ -1521,18 +1516,13 @@ watch([textInput, () => [...replacements.value], () => ({ ...options }), outputM
     <section class="content">
       <div class="editor-panel">
         <div class="editor-header">
-          <div class="d-flex align-items-center">
-            <h5 class="mb-0 me-3">{{ t('inputText') }}</h5>
-            <label class="toggle-switch">
-              <input 
-                type="checkbox" 
-                v-model="outputMode" 
-                true-value="code" 
-                false-value="text"
-              >
+          <div class="input-header-content">
+            <h5 class="mb-0">{{ t('inputText') }}</h5>
+            <label class="mode-switch">
+              <input type="checkbox" v-model="outputMode" true-value="code" false-value="text">
               <span class="slider">
-                <span class="label code">{{ t('outputModeCode') }}</span>
-                <span class="label text">{{ t('outputModeText') }}</span>
+                <span class="option code">{{ t('codeMode') }}</span>
+                <span class="option text">{{ t('textMode') }}</span>
               </span>
             </label>
           </div>
@@ -1838,6 +1828,88 @@ body, html {
   border-bottom: 1px solid var(--border-color);
 }
 
+.input-header-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mode-switch {
+  position: relative;
+  display: inline-block;
+  width: 120px;
+  height: 30px;
+  margin-left: 10px;
+}
+
+.mode-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 5px;
+  transition: all 0.3s ease;
+}
+
+.slider .option {
+  font-size: 0.8rem;
+  color: var(--text-color);
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+  width: 50%;
+  text-align: center;
+}
+
+.slider .option.code {
+  text-align: left;
+}
+
+.slider .option.text {
+  text-align: right;
+}
+
+.mode-switch input:checked + .slider .code {
+  opacity: 1;
+}
+
+.mode-switch input:not(:checked) + .slider .text {
+  opacity: 1;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 24px;
+  width: 58px;
+  border-radius: 12px;
+  background-color: #0d6efd;
+  transition: transform 0.3s ease;
+  top: 2px;
+  left: 2px;
+}
+
+.mode-switch input:checked + .slider:before {
+  transform: translateX(0);
+}
+
+.mode-switch input:not(:checked) + .slider:before {
+  transform: translateX(58px);
+}
+
 .editor-content {
   flex-grow: 1;
   overflow: auto;
@@ -1853,6 +1925,7 @@ body, html {
   line-height: 1.5;
   box-sizing: border-box;
   position: relative;
+  transition: all 0.3s ease;
 }
 
 [contenteditable="true"] {
@@ -1886,10 +1959,7 @@ body, html {
   font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
   text-align: left;
   position: relative;
-  padding: 15px 10px;
-  margin: 4px 4px 8px 4px;
-  width: calc(100% - 8px);
-  box-sizing: border-box;
+  transition: all 0.3s ease;
 }
 
 .output-pre:empty:before {
@@ -1910,20 +1980,13 @@ body, html {
   z-index: 1;
 }
 
-.output-wrapper {
-  display: block;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-.output-wrapper code,
-.output-wrapper span {
-  display: block;
-  width: 100%;
+.output-text {
   white-space: pre-wrap;
   word-wrap: break-word;
   font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  color: var(--text-color);
   line-height: 1.5;
+  transition: all 0.3s ease;
 }
 
 .buttons {
@@ -2086,79 +2149,6 @@ body, html {
   background: var(--btn-hover-bg);
 }
 
-/* Toggle Switch Styles */
-.toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 120px;
-  height: 30px;
-}
-
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: #2d2d2d;
-  border: 1px solid #00c4b4;
-  border-radius: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 10px;
-  transition: all 0.3s ease;
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 24px;
-  width: 60px;
-  left: 3px;
-  bottom: 2px;
-  background-color: #00c4b4;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-}
-
-input:checked + .slider:before {
-  transform: translateX(54px);
-  background-color: #2d2d2d;
-}
-
-.slider .label {
-  font-size: 0.8rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  z-index: 1;
-}
-
-.slider .label.code {
-  color: #00c4b4;
-  margin-left: 5px;
-}
-
-.slider .label.text {
-  color: #e0e0e0;
-  margin-right: 5px;
-}
-
-input:checked + .slider .label.code {
-  color: #e0e0e0;
-}
-
-input:checked + .slider .label.text {
-  color: #00c4b4;
-}
-
 @keyframes floatUFO {
   0%, 100% {
     transform: translateY(0);
@@ -2265,10 +2255,6 @@ h1::before {
   margin-right: 0.5rem;
 }
 
-.me-3 {
-  margin-right: 1rem;
-}
-
 .mb-0 {
   margin-bottom: 0 !important;
 }
@@ -2298,10 +2284,6 @@ h1::before {
 
 .d-block {
   display: block !important;
-}
-
-.d-flex {
-  display: flex !important;
 }
 
 .w-auto {
@@ -2383,8 +2365,13 @@ h1::before {
 
 .hljs {
   background: var(--highlight-bg) !important;
+  padding: 15px 10px !important;
   border-radius: 0 !important;
   outline: none !important;
+  margin: 4px 4px 8px 4px !important;
+  width: calc(100% - 8px) !important;
+  box-sizing: border-box !important;
+  transition: all 0.3s ease;
 }
 
 .manual-placeholder {
@@ -2393,5 +2380,11 @@ h1::before {
   pointer-events: none;
   font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
   display: block;
+}
+
+.output-pre code {
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  transition: all 0.3s ease;
 }
 </style>
