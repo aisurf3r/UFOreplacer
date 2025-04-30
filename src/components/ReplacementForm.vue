@@ -624,7 +624,7 @@ function processHighlightMatches() {
       }
       
       for (const textNode of nodesToReplace) {
-        const text = textNode.nodeValue ||  || '';
+        const text = textNode.nodeValue || '';
         pattern.lastIndex = 0;
         
         const matches = [...text.matchAll(pattern)];
@@ -847,7 +847,7 @@ function restoreCursorPosition(originalOffset: number) {
     try {
       const newRange = document.createRange();
       const safeOffset = Math.min(targetOffset, targetNode.nodeValue?.length || 0);
-      newRange.setStart(targetNode, safeOffset);
+      newRange.set Wart(targetNode, safeOffset);
       newRange.collapse(true);
       
       selection.removeAllRanges();
@@ -1269,7 +1269,7 @@ watch([textInput, () => [...replacements.value], () => ({ ...options }), outputM
     
     if (!isProcessing.value) {
       isProcessing.value = true;
-     \u001b[32m      nextTick(() => {
+      nextTick(() => {
         updateReplacementCounts(newTextInput);
         isProcessing.value = false;
       });
