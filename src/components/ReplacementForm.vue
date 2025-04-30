@@ -847,7 +847,7 @@ function restoreCursorPosition(originalOffset: number) {
     try {
       const newRange = document.createRange();
       const safeOffset = Math.min(targetOffset, targetNode.nodeValue?.length || 0);
-      newRange.set Wart(targetNode, safeOffset);
+      newRange.setStart(targetNode, safeOffset);
       newRange.collapse(true);
       
       selection.removeAllRanges();
