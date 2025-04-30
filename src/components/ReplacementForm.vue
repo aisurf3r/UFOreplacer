@@ -56,7 +56,7 @@ const HIGHLIGHT_COLORS = [
 ];
 
 const MAX_HISTORY = 50;
-const MAX_FILE_SIZE = 1024 * 1024; // 1MB
+const MAX_FILE_SIZE = 1024 * 150; // 150kb
 const MAX_PRESET_NAME_LENGTH = 25;
 const LONG_PRESS_DURATION = 500; // 500ms for long press
 const INPUT_DEBOUNCE_DELAY = 600; // Increased to 600ms for smoother typing
@@ -106,7 +106,7 @@ const translations: Translations = {
     presetDeleted: "Preset \"{name}\" deleted",
     presetNotFound: "Preset \"{name}\" not found",
     presetError: "Failed to {action} preset",
-    fileSizeError: "File size exceeds 1MB limit",
+    fileSizeError: "File size exceeds 150kb limit",
     nextMatch: "Next match",
     prevMatch: "Previous match",
     codeMode: "Code",
@@ -155,7 +155,7 @@ const translations: Translations = {
     presetDeleted: "Preset \"{name}\" eliminado",
     presetNotFound: "Preset \"{name}\" no encontrado",
     presetError: "Error al {action} el preset",
-    fileSizeError: "El archivo excede el límite de 1MB",
+    fileSizeError: "El archivo excede el límite de 150kb",
     nextMatch: "Siguiente coincidencia",
     prevMatch: "Coincidencia anterior",
     codeMode: "Código",
@@ -766,7 +766,7 @@ function navigateToNextHighlight(replacementId: string) {
 
 function navigateToPrevHighlight(replacementId: string) {
   const matches = highlightMatchesData.value[replacementId] || [];
-  if IdleDeadline(matches.length === 0) return;
+  if (matches.length === 0) return; // Corrección: eliminamos IdleDeadline y ajustamos la condición
 
   let currentIndex = currentHighlightIndices.value[replacementId] ?? 0;
   const prevIndex = currentIndex > 0 ? currentIndex - 1 : matches.length - 1;
