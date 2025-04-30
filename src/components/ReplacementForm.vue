@@ -202,7 +202,7 @@ const isTyping = ref(false);
 const longPressTimer = ref<number | null>(null);
 const isLongPressing = ref(false);
 const isPressing = ref(false);
-const outputMode = ref<'code' | 'text'>('text');
+const outputMode = ref<'code' | 'text'>('code');
 
 // ==================== COMPUTED ====================
 const canUndo = computed(() => historyIndex.value > 0);
@@ -583,9 +583,7 @@ function processHighlightMatches() {
   const plainText = inputContainerRef.value.innerText;
   
   inputContainerRef.value.innerHTML = '';
-  if (plainText) {
-    inputContainerRef.value.appendChild(document.createTextNode(plainText));
-  }
+  inputContainerRef.value.appendChild(document.createTextNode(plainText));
   
   const tempContainer = document.createElement('div');
   tempContainer.textContent = plainText;
@@ -768,7 +766,7 @@ function navigateToNextHighlight(replacementId: string) {
 
 function navigateToPrevHighlight(replacementId: string) {
   const matches = highlightMatchesData.value[replacementId] || [];
-  if (matches.length === 0) return;
+  if IdleDeadline(matches.length === 0) return;
 
   let currentIndex = currentHighlightIndices.value[replacementId] ?? 0;
   const prevIndex = currentIndex > 0 ? currentIndex - 1 : matches.length - 1;
@@ -1204,18 +1202,18 @@ function processAndHighlight() {
         if (processedText.value) {
           const wrapper = document.createElement('div');
           wrapper.className = 'output-content-wrapper';
-          wrapper.setAttribute('tabindex', '-1');
+          wrapper.setAttribute('tabindex', '-1'); // Evitar que el wrapper sea enfocable
           
           if (outputMode.value === 'code') {
             const codeElement = document.createElement('code');
-            codeElement.setAttribute('tabindex', '-1');
+            codeElement.setAttribute('tabindex', '-1'); // Evitar que el elemento <code> sea enfocable
             codeElement.textContent = processedText.value;
             wrapper.appendChild(codeElement);
             hljs.highlightElement(codeElement);
           } else {
             const textElement = document.createElement('div');
             textElement.className = 'output-text';
-            textElement.setAttribute('tabindex', '-1');
+            textElement.setAttribute('tabindex', '-1'); // Evitar que el elemento <div> sea enfocable
             textElement.textContent = processedText.value;
             wrapper.appendChild(textElement);
           }
@@ -1228,7 +1226,7 @@ function processAndHighlight() {
     } finally {
       isProcessingLargeText.value = false;
       isProcessing.value = false;
-  }
+    }
   });
 }
 
@@ -1531,8 +1529,8 @@ watch([textInput, () => [...replacements.value], () => ({ ...options }), outputM
             <label class="mode-switch">
               <input type="checkbox" v-model="outputMode" true-value="code" false-value="text">
               <span class="slider">
-                <span class="option text">{{ t('textMode') }}</span>
                 <span class="option code">{{ t('codeMode') }}</span>
+                <span class="option text">{{ t('textMode') }}</span>
               </span>
             </label>
           </div>
@@ -1885,11 +1883,11 @@ body, html {
   z-index: 2;
 }
 
-.slider .option.text {
+.slider .option.code {
   text-align: left;
 }
 
-.slider .option.code {
+.slider .option.text {
   text-align: right;
 }
 
