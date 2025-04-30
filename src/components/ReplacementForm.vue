@@ -56,7 +56,7 @@ const HIGHLIGHT_COLORS = [
 ];
 
 const MAX_HISTORY = 50;
-const MAX_FILE_SIZE = 1024 * 500; // 500 KB (ajustado previamente)
+const MAX_FILE_SIZE = 1024 * 1024; // 1MB
 const MAX_PRESET_NAME_LENGTH = 25;
 const LONG_PRESS_DURATION = 500; // 500ms for long press
 const INPUT_DEBOUNCE_DELAY = 600; // Increased to 600ms for smoother typing
@@ -106,7 +106,7 @@ const translations: Translations = {
     presetDeleted: "Preset \"{name}\" deleted",
     presetNotFound: "Preset \"{name}\" not found",
     presetError: "Failed to {action} preset",
-    fileSizeError: "File size exceeds 500KB limit", // Ajustado a 500KB
+    fileSizeError: "File size exceeds 1MB limit",
     nextMatch: "Next match",
     prevMatch: "Previous match",
     codeMode: "Code",
@@ -155,7 +155,7 @@ const translations: Translations = {
     presetDeleted: "Preset \"{name}\" eliminado",
     presetNotFound: "Preset \"{name}\" no encontrado",
     presetError: "Error al {action} el preset",
-    fileSizeError: "El archivo excede el límite de 500KB", // Ajustado a 500KB
+    fileSizeError: "El archivo excede el límite de 1MB",
     nextMatch: "Siguiente coincidencia",
     prevMatch: "Coincidencia anterior",
     codeMode: "Código",
@@ -202,24 +202,12 @@ const isTyping = ref(false);
 const longPressTimer = ref<number | null>(null);
 const isLongPressing = ref(false);
 const isPressing = ref(false);
-const outputMode = ref<'code' | 'text'>('text'); // Ajustado a 'text' por defecto
+const outputMode = ref<'code' | 'text'>('text');
 
 // ==================== COMPUTED ====================
 const canUndo = computed(() => historyIndex.value > 0);
 const canRedo = computed(() => historyIndex.value < history.value.length - 1);
-
-const processedText = computed(() => {
-  const text = textInput.value;
-  if (!text) return '';
-
-  let result = '';
-  processTextInChunks(text).then(processed => {
-    result = processed;
-    updateReplacementCounts(result);
-  });
-
-  return result;
-});
+const processedText = computed(() => applyReplacements(textInput.value));
 
 const canNavigateNext = computed(() => (id: string) => {
   const matches = highlightMatchesData.value[id] || [];
@@ -268,7 +256,7 @@ function saveState() {
     if (prevReplacements.length !== replacements.value.length) {
       newEntry.replacements = JSON.parse(JSON.stringify(replacements.value));
     } else {
-      const changed = replacements.value.some385((item, idx) => {
+      const changed = replacements.value.some((item, idx) => {
         const prev = prevReplacements[idx];
         return !prev || item.original !== prev.original || item.replacement !== prev.replacement;
       });
@@ -577,25 +565,6 @@ function applyReplacements(text: string): string {
   return result;
 }
 
-async function processTextInChunks(text: string, chunkSize: number = 10000): Promise<string> {
-  if (text.length <= chunkSize) {
-    return applyReplacements(text);
-  }
-
-  const chunks: string[] = [];
-  for (let i = 0; i < text.length; i += chunkSize) {
-    chunks.push(text.slice(i, i + chunkSize));
-  }
-
-  let result = '';
-  for (const chunk of chunks) {
-    await new Promise(resolve => setTimeout(resolve, 0));
-    result += applyReplacements(chunk);
-  }
-
-  return result;
-}
-
 // ==================== FUNCIONES DE UI ====================
 function clearHighlights() {
   if (!inputContainerRef.value) return;
@@ -655,7 +624,7 @@ function processHighlightMatches() {
       }
       
       for (const textNode of nodesToReplace) {
-        const text = textNode.nodeValue || '';
+        const text = textNode.nodeValue ||  || '';
         pattern.lastIndex = 0;
         
         const matches = [...text.matchAll(pattern)];
@@ -964,41 +933,24 @@ function forcePlaceholder() {
   
   const isEmpty = !inputContainerRef.value.innerText || inputContainerRef.value.innerText.trim() === '';
   if (isEmpty) {
-    while (inputContainerRef.value.firstChild) {
-      inputContainerRef.value.removeChild(inputContainerRef.value.firstChild);
-    }
     inputContainerRef.value.innerHTML = '';
     
-    const textContent = inputContainerRef.value.innerText;
-    if (textContent && !textContent.trim()) {
-      inputContainerRef.value.innerText = '';
-    }
+    const placeholderSpan = document.createElement('span');
+    placeholderSpan.className = 'manual-placeholder';
+    placeholderSpan.textContent = t('inputPlaceholder');
+    placeholderSpan.style.color = 'var(--text-color)';
+    placeholderSpan.style.opacity = '0.6';
+    placeholderSpan.style.pointerEvents = 'none';
+    placeholderSpan.style.fontFamily = "'SF Mono', 'Consolas', 'Monaco', monospace";
+    inputContainerRef.value.appendChild(placeholderSpan);
     
-    const parent = inputContainerRef.value.parentElement;
-    if (parent) {
-      inputContainerRef.value.style.display = 'none';
-      void inputContainerRef.value.offsetHeight;
-      inputContainerRef.value.style.display = 'block';
-    }
-    
-    if (!inputContainerRef.value.hasChildNodes()) {
-      const placeholderSpan = document.createElement('span');
-      placeholderSpan.className = 'manual-placeholder';
-      placeholderSpan.textContent = t('inputPlaceholder');
-      placeholderSpan.style.color = 'var(--text-color)';
-      placeholderSpan.style.opacity = '0.6';
-      placeholderSpan.style.pointerEvents = 'none';
-      placeholderSpan.style.fontFamily = "'SF Mono', 'Consolas', 'Monaco', monospace";
-      inputContainerRef.value.appendChild(placeholderSpan);
-      
-      const removePlaceholder = () => {
-        if (inputContainerRef.value?.querySelector('.manual-placeholder')) {
-          inputContainerRef.value.innerHTML = '';
-        }
-        inputContainerRef.value?.removeEventListener('input', removePlaceholder);
-      };
-      inputContainerRef.value.addEventListener('input', removePlaceholder);
-    }
+    const removePlaceholder = () => {
+      if (inputContainerRef.value?.querySelector('.manual-placeholder')) {
+        inputContainerRef.value.innerHTML = '';
+      }
+      inputContainerRef.value?.removeEventListener('input', removePlaceholder);
+    };
+    inputContainerRef.value.addEventListener('input', removePlaceholder);
   }
 }
 
@@ -1225,13 +1177,7 @@ function processAndHighlight() {
     try {
       clearRegexCache();
       updateReplacementCounts(textInput.value);
-      
-      if (textInput.value.length <= 50000) {
-        processHighlightMatches();
-      } else {
-        clearHighlights();
-      }
-      
+      processHighlightMatches();
       restoreFocusAfterUpdate();
       
       if (outputContainerRef.value) {
@@ -1258,6 +1204,9 @@ function processAndHighlight() {
           outputContainerRef.value.appendChild(wrapper);
         }
       }
+
+      updateInputContent(textInput.value);
+      forcePlaceholder();
     } catch (error) {
       console.error('Error during processing:', error);
     } finally {
@@ -1315,12 +1264,12 @@ onUnmounted(() => {
 // ==================== WATCHERS ====================
 watch([textInput, () => [...replacements.value], () => ({ ...options }), outputMode], 
   ([newTextInput, newReplacements], [, oldReplacements]) => {
-    const isLargeText = newTextInput.length > 50000;
+    const isLargeText = newTextInput.length > 10000;
     isProcessingLargeText.value = isLargeText;
     
     if (!isProcessing.value) {
       isProcessing.value = true;
-      nextTick(() => {
+     \u001b[32m      nextTick(() => {
         updateReplacementCounts(newTextInput);
         isProcessing.value = false;
       });
@@ -1564,7 +1513,7 @@ watch([textInput, () => [...replacements.value], () => ({ ...options }), outputM
           <div class="input-header-content">
             <h5 class="mb-0">{{ t('inputText') }}</h5>
             <label class="mode-switch">
-              <input type="checkbox" v-model="outputMode" true-value="code" false-value="text">
+              <input type="checkbox" v-model="outputMode" true-value="text" false-value="code">
               <span class="slider">
                 <span class="option text">{{ t('textMode') }}</span>
                 <span class="option code">{{ t('codeMode') }}</span>
@@ -1928,11 +1877,11 @@ body, html {
   text-align: right;
 }
 
-.mode-switch input:checked + .slider .code {
+.mode-switch input:checked + .slider .text {
   opacity: 1;
 }
 
-.mode-switch input:not(:checked) + .slider .text {
+.mode-switch input:not(:checked) + .slider .code {
   opacity: 1;
 }
 
@@ -1950,11 +1899,11 @@ body, html {
 }
 
 .mode-switch input:checked + .slider:before {
-  transform: translateX(58px);
+  transform: translateX(0);
 }
 
 .mode-switch input:not(:checked) + .slider:before {
-  transform: translateX(0);
+  transform: translateX(58px);
 }
 
 .editor-content {
