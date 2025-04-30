@@ -56,7 +56,7 @@ const HIGHLIGHT_COLORS = [
 ];
 
 const MAX_HISTORY = 50;
-const MAX_FILE_SIZE = 1024 * 150; // 150kb
+const MAX_FILE_SIZE = 1024 * 500; // 500 KB (ajustado previamente)
 const MAX_PRESET_NAME_LENGTH = 25;
 const LONG_PRESS_DURATION = 500; // 500ms for long press
 const INPUT_DEBOUNCE_DELAY = 600; // Increased to 600ms for smoother typing
@@ -106,7 +106,7 @@ const translations: Translations = {
     presetDeleted: "Preset \"{name}\" deleted",
     presetNotFound: "Preset \"{name}\" not found",
     presetError: "Failed to {action} preset",
-    fileSizeError: "File size exceeds 150kb limit",
+    fileSizeError: "File size exceeds 500KB limit", // Ajustado a 500KB
     nextMatch: "Next match",
     prevMatch: "Previous match",
     codeMode: "Code",
@@ -155,7 +155,7 @@ const translations: Translations = {
     presetDeleted: "Preset \"{name}\" eliminado",
     presetNotFound: "Preset \"{name}\" no encontrado",
     presetError: "Error al {action} el preset",
-    fileSizeError: "El archivo excede el límite de 150kb",
+    fileSizeError: "El archivo excede el límite de 500KB", // Ajustado a 500KB
     nextMatch: "Siguiente coincidencia",
     prevMatch: "Coincidencia anterior",
     codeMode: "Código",
@@ -202,12 +202,24 @@ const isTyping = ref(false);
 const longPressTimer = ref<number | null>(null);
 const isLongPressing = ref(false);
 const isPressing = ref(false);
-const outputMode = ref<'code' | 'text'>('text');
+const outputMode = ref<'code' | 'text'>('text'); // Ajustado a 'text' por defecto
 
 // ==================== COMPUTED ====================
 const canUndo = computed(() => historyIndex.value > 0);
 const canRedo = computed(() => historyIndex.value < history.value.length - 1);
-const processedText = computed(() => applyReplacements(textInput.value));
+
+const processedText = computed(() => {
+  const text = textInput.value;
+  if (!text) return '';
+
+  let result = '';
+  processTextInChunks(text).then(processed => {
+    result = processed;
+    updateReplacementCounts(result);
+  });
+
+  return result;
+});
 
 const canNavigateNext = computed(() => (id: string) => {
   const matches = highlightMatchesData.value[id] || [];
@@ -256,7 +268,7 @@ function saveState() {
     if (prevReplacements.length !== replacements.value.length) {
       newEntry.replacements = JSON.parse(JSON.stringify(replacements.value));
     } else {
-      const changed = replacements.value.some((item, idx) => {
+      const changed = replacements.value.some385((item, idx) => {
         const prev = prevReplacements[idx];
         return !prev || item.original !== prev.original || item.replacement !== prev.replacement;
       });
@@ -565,6 +577,25 @@ function applyReplacements(text: string): string {
   return result;
 }
 
+async function processTextInChunks(text: string, chunkSize: number = 10000): Promise<string> {
+  if (text.length <= chunkSize) {
+    return applyReplacements(text);
+  }
+
+  const chunks: string[] = [];
+  for (let i = 0; i < text.length; i += chunkSize) {
+    chunks.push(text.slice(i, i + chunkSize));
+  }
+
+  let result = '';
+  for (const chunk of chunks) {
+    await new Promise(resolve => setTimeout(resolve, 0));
+    result += applyReplacements(chunk);
+  }
+
+  return result;
+}
+
 // ==================== FUNCIONES DE UI ====================
 function clearHighlights() {
   if (!inputContainerRef.value) return;
@@ -766,7 +797,7 @@ function navigateToNextHighlight(replacementId: string) {
 
 function navigateToPrevHighlight(replacementId: string) {
   const matches = highlightMatchesData.value[replacementId] || [];
-  if (matches.length === 0) return; // Corrección: eliminamos IdleDeadline y ajustamos la condición
+  if (matches.length === 0) return;
 
   let currentIndex = currentHighlightIndices.value[replacementId] ?? 0;
   const prevIndex = currentIndex > 0 ? currentIndex - 1 : matches.length - 1;
@@ -1194,7 +1225,13 @@ function processAndHighlight() {
     try {
       clearRegexCache();
       updateReplacementCounts(textInput.value);
-      processHighlightMatches();
+      
+      if (textInput.value.length <= 50000) {
+        processHighlightMatches();
+      } else {
+        clearHighlights();
+      }
+      
       restoreFocusAfterUpdate();
       
       if (outputContainerRef.value) {
@@ -1202,18 +1239,18 @@ function processAndHighlight() {
         if (processedText.value) {
           const wrapper = document.createElement('div');
           wrapper.className = 'output-content-wrapper';
-          wrapper.setAttribute('tabindex', '-1'); // Evitar que el wrapper sea enfocable
+          wrapper.setAttribute('tabindex', '-1');
           
           if (outputMode.value === 'code') {
             const codeElement = document.createElement('code');
-            codeElement.setAttribute('tabindex', '-1'); // Evitar que el elemento <code> sea enfocable
+            codeElement.setAttribute('tabindex', '-1');
             codeElement.textContent = processedText.value;
             wrapper.appendChild(codeElement);
             hljs.highlightElement(codeElement);
           } else {
             const textElement = document.createElement('div');
             textElement.className = 'output-text';
-            textElement.setAttribute('tabindex', '-1'); // Evitar que el elemento <div> sea enfocable
+            textElement.setAttribute('tabindex', '-1');
             textElement.textContent = processedText.value;
             wrapper.appendChild(textElement);
           }
@@ -1278,7 +1315,7 @@ onUnmounted(() => {
 // ==================== WATCHERS ====================
 watch([textInput, () => [...replacements.value], () => ({ ...options }), outputMode], 
   ([newTextInput, newReplacements], [, oldReplacements]) => {
-    const isLargeText = newTextInput.length > 10000;
+    const isLargeText = newTextInput.length > 50000;
     isProcessingLargeText.value = isLargeText;
     
     if (!isProcessing.value) {
@@ -1526,13 +1563,13 @@ watch([textInput, () => [...replacements.value], () => ({ ...options }), outputM
         <div class="editor-header">
           <div class="input-header-content">
             <h5 class="mb-0">{{ t('inputText') }}</h5>
-           <label class="mode-switch">
-          <input type="checkbox" v-model="outputMode" true-value="code" false-value="text">
-          <span class="slider">
-          <span class="option text">{{ t('textMode') }}</span>
-          <span class="option code">{{ t('codeMode') }}</span>
-          </span>
-          </label>
+            <label class="mode-switch">
+              <input type="checkbox" v-model="outputMode" true-value="code" false-value="text">
+              <span class="slider">
+                <span class="option text">{{ t('textMode') }}</span>
+                <span class="option code">{{ t('codeMode') }}</span>
+              </span>
+            </label>
           </div>
           <div class="file-upload-container">
             <div class="file-formats">
@@ -1884,19 +1921,19 @@ body, html {
 }
 
 .slider .option.text {
-  text-align: left; /* "Texto" ahora está a la izquierda */
+  text-align: left;
 }
 
 .slider .option.code {
-  text-align: right; /* "Código" ahora está a la derecha */
+  text-align: right;
 }
 
 .mode-switch input:checked + .slider .code {
-  opacity: 1; /* Resalta "Código" cuando el modo es "code" */
+  opacity: 1;
 }
 
 .mode-switch input:not(:checked) + .slider .text {
-  opacity: 1; /* Resalta "Texto" cuando el modo es "text" */
+  opacity: 1;
 }
 
 .slider:before {
@@ -1913,15 +1950,11 @@ body, html {
 }
 
 .mode-switch input:checked + .slider:before {
-  transform: translateX(58px); /* Fondo a la derecha cuando el modo es "code" */
-}
-
-.mode-switch input:not(:checked) + .slider:before {
-  transform: translateX(0); /* Fondo a la izquierda cuando el modo es "text" */
-}
-
-.mode-switch input:not(:checked) + .slider:before {
   transform: translateX(58px);
+}
+
+.mode-switch input:not(:checked) + .slider:before {
+  transform: translateX(0);
 }
 
 .editor-content {
