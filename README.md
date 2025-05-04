@@ -154,6 +154,6 @@ This project is licensed under the [MIT License](LICENSE). See the LICENSE file 
 
 ---
 TODO: Fix placeholders in main boxes.
-      Text edition and focus lost in main in input.
+      Text edition and focus lost in main input box.
 
 🚀 Happy text replacing with UFO Replacer! 🛸
