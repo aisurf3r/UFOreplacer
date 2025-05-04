@@ -13,7 +13,7 @@
 - **Bulk Find & Replace**: Define multiple find-and-replace pairs to process text in one go.
 - **Real-Time Highlighting**: Matches are highlighted in the input text with customizable colors for each replacement rule.
 - **Regex Support**: Use regular expressions for advanced pattern matching, with options for case sensitivity and whole-word matching.
-- **File Upload**: Import text files (TXT, CSV, HTML, CSS, JS, JSON, XML, MD) up to 1MB for processing.
+- **File Upload**: Import text files (TXT, CSV, HTML, CSS, JS, JSON, XML, MD) up to 150kb for processing.
 - **Preset Management**: Save, load, and delete replacement rule sets for reuse.
 - **Undo/Redo**: Easily revert or reapply changes with a robust history system.
 - **Multilingual**: Supports English and Spanish interfaces.
