@@ -1,6 +1,8 @@
 # UFO Replacer
 
-<img width="1920" height="966" alt="{35EB2272-FEA5-4CF1-A085-3759DAFF2CAA}" src="https://github.com/user-attachments/assets/708e6d6a-c4f9-4817-a825-5488dbc8584c" />
+<img width="1915" height="970" alt="{DDF7E403-069E-4176-A785-1CE90DA20C2E}" src="https://github.com/user-attachments/assets/1b7f66d4-ead0-4ec4-9ac3-607b0448c735" />
+
+
 
 🔎 **UFO Replacer** is a powerful and intuitive web-based tool for performing bulk find-and-replace operations on text. Built with Vue.js and TypeScript, it offers a modern interface for managing multiple replacement rules, real-time highlighting, file uploads, and preset management. Whether you're editing code, cleaning data, or transforming text, UFO Replacer makes the process efficient and user-friendly.
 
